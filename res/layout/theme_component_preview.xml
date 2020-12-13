@@ -74,6 +74,7 @@
             android:layout_marginHorizontal="8dp"
             android:layout_marginTop="@dimen/preview_theme_content_margin"
             android:clipChildren="false"
+            android:importantForAccessibility="noHideDescendants"
             app:layout_constraintBottom_toTopOf="@+id/guideline"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHeight_max="@dimen/preview_theme_content_max_height"

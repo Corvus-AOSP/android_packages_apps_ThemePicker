@@ -35,6 +35,7 @@ import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.LayerDrawable;
 import android.graphics.drawable.ShapeDrawable;
+import android.graphics.drawable.StateListDrawable;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -55,6 +56,7 @@ import androidx.core.graphics.ColorUtils;
 import com.android.customization.model.CustomizationManager;
 import com.android.customization.model.CustomizationOption;
 import com.android.customization.model.ResourceConstants;
+import com.android.customization.model.theme.ThemeBundle.PreviewInfo.ShapeAppIcon;
 import com.android.customization.model.theme.custom.CustomTheme.Builder;
 import com.android.wallpaper.R;
 
@@ -136,6 +138,9 @@ public abstract class ThemeComponentOption implements CustomizationOption<ThemeC
 
         @Override
         public void bindPreview(ViewGroup container) {
+            container.setContentDescription(
+                    container.getContext().getString(R.string.font_preview_content_description));
+
             bindPreviewHeader(container, R.string.preview_name_font, R.drawable.ic_font);
 
             ViewGroup cardBody = container.findViewById(R.id.theme_preview_card_body_container);
@@ -226,6 +231,9 @@ public abstract class ThemeComponentOption implements CustomizationOption<ThemeC
 
         @Override
         public void bindPreview(ViewGroup container) {
+            container.setContentDescription(
+                    container.getContext().getString(R.string.icon_preview_content_description));
+
             bindPreviewHeader(container, R.string.preview_name_icon, R.drawable.ic_wifi_24px);
 
             TextView header = container.findViewById(R.id.theme_preview_card_header);
@@ -320,8 +328,21 @@ public abstract class ThemeComponentOption implements CustomizationOption<ThemeC
         @Override
         public void bindThumbnailTile(View view) {
             @ColorInt int color = resolveColor(view.getResources());
-            ((ImageView) view.findViewById(R.id.option_tile)).setImageTintList(
+            LayerDrawable selectedOption = (LayerDrawable) view.getResources().getDrawable(
+                    R.drawable.color_chip_hollow, view.getContext().getTheme());
+            Drawable unselectedOption = view.getResources().getDrawable(
+                    R.drawable.color_chip_filled, view.getContext().getTheme());
+
+            selectedOption.findDrawableByLayerId(R.id.center_fill).setTintList(
                     ColorStateList.valueOf(color));
+            unselectedOption.setTintList(ColorStateList.valueOf(color));
+
+            StateListDrawable stateListDrawable = new StateListDrawable();
+            stateListDrawable.addState(new int[] {android.R.attr.state_activated}, selectedOption);
+            stateListDrawable.addState(
+                    new int[] {-android.R.attr.state_activated}, unselectedOption);
+
+            ((ImageView) view.findViewById(R.id.option_tile)).setImageDrawable(stateListDrawable);
             view.setContentDescription(mLabel);
         }
 
@@ -346,6 +367,9 @@ public abstract class ThemeComponentOption implements CustomizationOption<ThemeC
 
         @Override
         public void bindPreview(ViewGroup container) {
+            container.setContentDescription(
+                    container.getContext().getString(R.string.color_preview_content_description));
+
             bindPreviewHeader(container, R.string.preview_name_color, R.drawable.ic_colorize_24px);
 
             TextView header = container.findViewById(R.id.theme_preview_card_header);
@@ -425,21 +449,23 @@ public abstract class ThemeComponentOption implements CustomizationOption<ThemeC
     public static class ShapeOption extends ThemeComponentOption {
 
         private final LayerDrawable mShape;
-        private final List<Drawable> mAppIcons;
+        private final List<ShapeAppIcon> mAppIcons;
         private final String mLabel;
         private final Path mPath;
+        private final int mCornerRadius;
         private int[] mShapeIconIds = {
                 R.id.shape_preview_icon_0, R.id.shape_preview_icon_1, R.id.shape_preview_icon_2,
                 R.id.shape_preview_icon_3, R.id.shape_preview_icon_4, R.id.shape_preview_icon_5
         };
 
         ShapeOption(String packageName, String label, Path path,
-                Drawable shapeDrawable,
-                List<Drawable> appIcons) {
+                @Dimension int cornerRadius, Drawable shapeDrawable,
+                List<ShapeAppIcon> appIcons) {
             addOverlayPackage(OVERLAY_CATEGORY_SHAPE, packageName);
             mLabel = label;
             mAppIcons = appIcons;
             mPath = path;
+            mCornerRadius = cornerRadius;
             Drawable background = shapeDrawable.getConstantState().newDrawable();
             Drawable foreground = shapeDrawable.getConstantState().newDrawable();
             mShape = new LayerDrawable(new Drawable[]{background, foreground});
@@ -487,6 +513,9 @@ public abstract class ThemeComponentOption implements CustomizationOption<ThemeC
 
         @Override
         public void bindPreview(ViewGroup container) {
+            container.setContentDescription(
+                    container.getContext().getString(R.string.shape_preview_content_description));
+
             bindPreviewHeader(container, R.string.preview_name_shape, R.drawable.ic_shapes_24px);
 
             TextView header = container.findViewById(R.id.theme_preview_card_header);
@@ -499,16 +528,15 @@ public abstract class ThemeComponentOption implements CustomizationOption<ThemeC
             }
             for (int i = 0; i < mShapeIconIds.length && i < mAppIcons.size(); i++) {
                 ImageView iconView = cardBody.findViewById(mShapeIconIds[i]);
-                iconView.setBackground(mAppIcons.get(i));
+                iconView.setBackground(mAppIcons.get(i).getDrawableCopy());
             }
         }
 
         @Override
         public Builder buildStep(Builder builder) {
-            builder.setShapePath(mPath);
-            for (Drawable appIcon : mAppIcons) {
-                builder.addShapePreviewIcon(appIcon);
-            }
+            builder.setShapePath(mPath)
+                    .setBottomSheetCornerRadius(mCornerRadius)
+                    .setShapePreviewIcons(mAppIcons);
             return super.buildStep(builder);
         }
     }
