@@ -73,6 +73,7 @@ android_library {
         "SystemUIFlagsLib",
         "SystemUI-statsd",
         "styleprotoslite",
+        "monet",
     ],
 
     optimize: {
